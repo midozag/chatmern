@@ -16,47 +16,61 @@ const ChatBox = ({selectedChat}) =>{
     },[messages])
     
     useEffect(()=>{
-      socketRef.current = io('http://localhost:3000')
+      socketRef.current = io(window.location.origin, {
+        path: '/socket.io',
+        transports: ['websocket', 'polling']
+      })
       return () =>{
         socketRef.current.disconnect();
       }
     },[])
     useEffect(()=>{
-      if(!selectedChat?._id || !socketRef.current) return;
-      socketRef.current.emit('join-conversation',selectedChat._id)
-      socketRef.current.on('receive-message',(newMessage)=>{
-        setMessages((prevMessages) => [...prevMessages,newMessage])
-      })
-      const fetchMessagesAndMarkRead = async () =>{
-        
-        try {
-          setLoading(true)  
-          
-          const response = await fetch(`http://localhost:3000/api/users/messages/${selectedChat._id}`)
-          const data = await response.json(); 
-          setMessages(data)
-          const markAsRead =  await fetch(`http://localhost:3000/api/users/conversation/${selectedChat._id}/read`,{
-            method:'PUT',
-            headers:{
-                'Content-Type':'application/json'
-            },
-            body:JSON.stringify({userId:currentUserId})
+    if(!selectedChat?._id || !socketRef.current) return;
+    
+    socketRef.current.emit('join-conversation',selectedChat._id)
+    
+    socketRef.current.on('receive-message',(newMessage)=>{
+        // Only add if message doesn't already exist
+        setMessages((prevMessages) => {
+            const messageExists = prevMessages.some(msg => msg._id === newMessage._id);
+            if(messageExists) {
+                return prevMessages; // Don't add duplicate
+            }
+            return [...prevMessages, newMessage];
         })
-          const markReadData = await markAsRead.json()
+    })
+    
+    const fetchMessagesAndMarkRead = async () =>{
+        try {
+            setLoading(true)  
+            
+            const response = await fetch(`http://localhost:3000/api/users/messages/${selectedChat._id}`)
+            const data = await response.json(); 
+            setMessages(data)
+            
+            const markAsRead = await fetch(`http://localhost:3000/api/users/conversation/${selectedChat._id}/read`,{
+                method:'PUT',
+                headers:{
+                    'Content-Type':'application/json'
+                },
+                body:JSON.stringify({userId:currentUserId})
+            })
+            const markReadData = await markAsRead.json()
         } 
         catch (error) {
-            console.error('Errror fetching messages:',error);    
+            console.error('Error fetching messages:',error);    
         }
         finally{
             setLoading(false)
         }
-      };
+    };
       
-      fetchMessagesAndMarkRead();
-      return () => {
+    fetchMessagesAndMarkRead();
+    
+    return () => {
         socketRef.current.off('receive-message');
-      };
-    },[selectedChat?._id])
+    };
+},[selectedChat?._id])
     
       
     const handleSend =async () =>{

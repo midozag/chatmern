@@ -1,0 +1,59 @@
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: chatapp-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mido
+      MONGO_INITDB_ROOT_PASSWORD: miramira
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - chatapp-network
+
+  # Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: api.Dockerfile
+    container_name: chatapp-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - MONGO_URI=mongodb://mido:miramira@mongodb:27017/chatapp?authSource=admin
+      - JWT_SECRET=hello
+      - GOOGLE_CLIENT_ID=103712900868-nakemho29qc6219bvtfl3edncopq23us.apps.googleusercontent.com
+    depends_on:
+      - mongodb
+    networks:
+      - chatapp-network
+    volumes:
+      - ./api:/app
+      - /app/node_modules
+
+  # Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend.Dockerfile
+    container_name: chatapp-frontend
+    restart: unless-stopped
+    ports:
+      - "8090:80"
+    depends_on:
+      - backend
+    networks:
+      - chatapp-network
+
+networks:
+  chatapp-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local

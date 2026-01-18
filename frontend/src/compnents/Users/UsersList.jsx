@@ -8,7 +8,10 @@ const UserList = () =>{
     const [loading,setLoading] = useState(true);
     const [erreur,setErreur] = useState(null);
     const handleMessage = async (userId) =>{
+      
         try{
+                
+        
                 const token = localStorage.getItem('token')
                 
                 const response = await fetch('http://localhost:3000/api/users/createconversation',{
@@ -22,6 +25,10 @@ const UserList = () =>{
                     receiverId: userId
                    })
                 });
+                if(!response.ok){
+            const data = await response.json();
+            throw new Error(data.message || 'Failed to create conversation');
+        }
                 const data = await response.json();
                 navigate(`/chat?query=${data.conversationId}`)        
                 if(!response.ok){

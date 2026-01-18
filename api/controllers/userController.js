@@ -34,7 +34,7 @@ export const registerUser = async(req,res)=>{
 }
 export const googleAuth = async(req,res) =>{
     try{
-        const {token,email,name} = req.body;
+        const {token,email,name,picture} = req.body;
         const ticket = await client.verifyIdToken({
             idToken:token,
             audience:process.env.GOOGLE_CLIENT_ID
@@ -158,6 +158,8 @@ export const list = async(req,res)=>{
 export const createConversation = async(req,res)=>{
     try{
         const {senderId,receiverId} = req.body;
+        console.log(req.body);
+        
         const existingConversation = await Conversation.findOne({
             $or:[
                 {sender_id:senderId,receiver_id:receiverId},
@@ -174,7 +176,8 @@ export const createConversation = async(req,res)=>{
         res.status(201).json({conversationId:newConversation._id})
     }
     catch(err){
-
+         console.error('Error creating conversation:', err);
+        return res.status(500).json({error: err.message || 'Failed to create conversation'});
     }
 }
 export const getConversations = async(req,res)=>{
@@ -233,8 +236,8 @@ export const createMessage = async (req,res)=>{
     req.app.get('io').to(conversation_id).emit('receive-message', message);
     res.status(201).json(message)
     } catch (error) {
-        console.error('Error creating message:',error);
-        res.status(500).json({message:'Error sending message'})
+        console.error('Error creating conversation:', err);
+        return res.status(500).json({error: err.message || 'Failed to create conversation'});
     }
 }
 export const getMessages = async(req,res) =>{

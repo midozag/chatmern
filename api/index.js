@@ -48,7 +48,7 @@ const connectDB = async () => {
       process.exit(1)
     }
   }
-  const PORT = 3200
+  const PORT = 3000
   const startServer = async () => {
     try {
       await connectDB()
